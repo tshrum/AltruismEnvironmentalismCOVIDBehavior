@@ -4,4 +4,4 @@ This repository contains the de-identified data and the code to clean and constr
 
 To use this code, start with r/master.R and run the file sequentially. Please contact tshrum@uvm.edu if you find any errors or have any questions.
 
-https://zenodo.org/badge/373265895.svg
+[![DOI](https://zenodo.org/badge/373265895.svg)](https://zenodo.org/badge/latestdoi/373265895)
