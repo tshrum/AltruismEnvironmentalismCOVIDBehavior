@@ -3,6 +3,9 @@
 
 load(file = 'data/workingDataset_dataQuality_fixZipState_merged.RData')
 
+# Filtering valid responses for updated Cronbach's alpha scores
+d %>% filter(invalidResponse == 0) -> d
+
 #### Data Preparation ####
 
 # Dropping Unneeded Variables
@@ -128,8 +131,8 @@ d <- d[,!grepl("^Q36_",names(d))]  # dropping original columns that have been co
 #Covid Risk Perception
 d$likelihoodCovid <- as.numeric(d$Q37_1)
 d$likelihoodFatalCovid <- as.numeric(d$Q38_1)
-d$worriedCOVID <- as.numeric(decode(d$Q41, search = c("Very worried", "Somewhat worried", "Not too worried", "Not worried at all"),
-                          replace = c(4, 3, 2, 1)))
+d$worriedCOVID <- scale(as.numeric(decode(d$Q41, search = c("Very worried", "Somewhat worried", "Not too worried", "Not worried at all"),
+                          replace = c(4, 3, 2, 1))))
 drops <- c("Q37_1", "Q38_1", "Q41")
 d <- d[ , !(names(d) %in% drops)]
 
@@ -191,16 +194,16 @@ d$indoorGymW <- scale(d$indoorGym) * mean(d$indoorGymRisk, na.rm = T)
 socialEngagement_df <- cbind(d$socialPeople, d$socialFreq)
 socialExposure_df <- cbind(d$socialPeople, d$socialFreq, d$barsW, d$visitFriendsHouseW, d$hostVisitorsW, 
                                  d$party10W, d$party50W, d$indoorDiningW, d$indoorGymW)
-alpha(socialEngagement_df, na.rm = T)  # alpha = 0.72
+alpha(socialEngagement_df, na.rm = T)  # alpha = 0.76
 alpha(socialExposure_df, na.rm = T)  # alpha = 0.84
 rm(socialEngagement_df, socialExposure_df)
 d$socialExposureIndex <- scale(scale(d$socialPeople) + scale(d$socialFreq) + d$barsW + d$visitFriendsHouseW +
   d$hostVisitorsW + d$party10W + d$party50W + d$indoorDiningW + d$indoorGymW)
 
 socialRiskReduction_df <- cbind(d$socialMask, d$socialDistancing, d$socialOutdoors)
-alpha(socialRiskReduction_df, na.rm = T) # alpha = 0.67
+alpha(socialRiskReduction_df, na.rm = T) # alpha = 0.68
 socialRiskReduction2_df <- data.frame(mask = d$socialMask, distance = d$socialDistancing)
-alpha(socialRiskReduction2_df, na.rm = T) # alpha = 0.74
+alpha(socialRiskReduction2_df, na.rm = T) # alpha = 0.75
 d$socialRiskReductionIndex <- scale(d$socialMask + d$socialDistancing)
 rm(socialRiskReduction2_df, socialRiskReduction_df)
 
@@ -365,8 +368,8 @@ d$mentalOverwhelmed <- oftenNever(d$Q56_4)/4
 d <- d[,!grepl("^Q55_",names(d))]  # dropping original columns that have been converted
 d <- d[,!grepl("^Q56_",names(d))]  # dropping original columns that have been converted
 
-d$mentalHealthIndex <- d$mentalNervous + d$mentalWorrying + d$mentalDepressed + d$mentalApathy +
-  d$mentalLossControl + d$mentalProblems + d$mentalGoingYourWay + d$mentalOverwhelmed
+d$mentalHealthIndex <- scale(d$mentalNervous + d$mentalWorrying + d$mentalDepressed + d$mentalApathy +
+  d$mentalLossControl + d$mentalProblems + d$mentalGoingYourWay + d$mentalOverwhelmed)
 sum(is.na(d$mentalHealthIndex))
 alpha(d[grepl("^mental",names(d))], na.rm = T)  # Cronbach's Alpha = 0.78
 
@@ -380,8 +383,17 @@ d$preexistCond <- ifelse(d$Q52 == "Yes", 1, 0)
 d$paidSickLeave <- ifelse(d$Q51 == "0", 0, 1)
 d$insured <- ifelse(d$Q49 == "Yes", 1, 0)
 d$household65 <- ifelse(d$Q95_1 != "0", 1, 0)
+
 d$age <- 2020 - as.numeric(d$Q99)
 d$senior <- ifelse(d$age >= 65, 1, 0)
+d$ageGroups <- NA
+d$ageGroups <- ifelse(d$age > 19 & d$age < 30, "20s", d$ageGroups)
+d$ageGroups <- ifelse(d$age > 29 & d$age < 40, "30s", d$ageGroups)
+d$ageGroups <- ifelse(d$age > 39 & d$age < 50, "40s", d$ageGroups)
+d$ageGroups <- ifelse(d$age > 49 & d$age < 60, "50s", d$ageGroups)
+d$ageGroups <- ifelse(d$age > 59 & d$age < 70, "60s", d$ageGroups)
+d$ageGroups <- ifelse(d$age > 69 & d$age < 80, "70s", d$ageGroups)
+
 d %>% dplyr::select(-Q51, -Q52, -Q49) -> d
 d$workFromHomeDays <- as.numeric(d$Q11)
 d %>% dplyr::select(-Q11) -> d
@@ -408,7 +420,7 @@ d$socialGatherFreqCommunity <- scale(as.numeric(d$socialGatherFreqCommunity))
 d %>% dplyr::select(-Q8_1, -Q9) -> d
 
 # Moral obligation
-d$moralObl <- agreeScale(d$Q10)
+d$moralObl <- scale(agreeScale(d$Q10))
 table(d$moralObl)
 sum(is.na(d$moralObl))
 d %>% dplyr::select(-Q10) -> d
@@ -439,15 +451,15 @@ d <- d[, !grepl("^Q71_", names(d))]
 #### Trust in Science ####
 # Confidence for groups to act in the best interest of the public
 # How much confidence, if any, do you have in each of the following to act in the best interests of the public? 
-d$trustPoliticians <- confidence(d$Q74_1)
-d$trustMedia <- confidence(d$Q74_2)
-d$trustMilitary <- confidence(d$Q74_3)
-d$trustMedScientists <- confidence(d$Q74_4)
-d$trustScientists <- confidence(d$Q74_5)
-d$trustReligiousLeaders <- confidence(d$Q74_6)
-d$trustSchoolLeaders <- confidence(d$Q74_7)
-d$trustBusinessLeaders <- confidence(d$Q74_8)
-d$trustDoctors <- confidence(d$Q74_9)
+d$trustPoliticians <- scale(confidence(d$Q74_1))
+d$trustMedia <- scale(confidence(d$Q74_2))
+d$trustMilitary <- scale(confidence(d$Q74_3))
+d$trustMedScientists <- scale(confidence(d$Q74_4))
+d$trustScientists <- scale(confidence(d$Q74_5))
+d$trustReligiousLeaders <- scale(confidence(d$Q74_6))
+d$trustSchoolLeaders <- scale(confidence(d$Q74_7))
+d$trustBusinessLeaders <- scale(confidence(d$Q74_8))
+d$trustDoctors <- scale(confidence(d$Q74_9))
 d <- d[, !grepl("^Q74_", names(d))]
 
 trust_df <- data.frame(d$trustPoliticians, d$trustBusinessLeaders, d$trustDoctors, d$trustMedia,
@@ -476,10 +488,10 @@ d$vaccinesHarmful <- agreeScale(d$Q39_1)
 d$vaccinesBenefits <- agreeScale(d$Q39_2)
 d$vaccinesDeath <- agreeScale(d$Q39_3)
 d$vaccinesEffective <- agreeScale(d$Q39_1)
-d$vaccinesCovid <- as.numeric(decode(d$Q40,
+d$vaccinesCovid <- scale(as.numeric(decode(d$Q40,
                           search = c("Very unlikely", "Somewhat unlikely", "Somewhat likely", "Very likely", "Unsure"),
-                          replace = c("1", "2", "4", "5", "3")))
-d$antiVaxIndex <- d$vaccinesHarmful - d$vaccinesBenefits + d$vaccinesDeath - d$vaccinesEffective 
+                          replace = c("1", "2", "4", "5", "3"))))
+d$antiVaxIndex <- scale(scale(d$vaccinesHarmful) - scale(d$vaccinesBenefits) + scale(d$vaccinesDeath) - scale(d$vaccinesEffective)) 
 d <- d[, !grepl("^Q39_", names(d))]
 d %>% dplyr::select(-Q40) -> d
 sum(is.na(d$antiVaxIndex))
@@ -515,6 +527,7 @@ lot %>%
   dplyr::select(ResponseId, lotterySwitchPoint, lotteryRational, lotteryMultiSwitch) %>%
   full_join(d, by = "ResponseId") -> d
 sum(is.na(d$lotterySwitchPoint))
+d$riskAversion <- scale(d$lotterySwitchPoint)
 
 ## New Environmental Paradigm Scale (Dunlap 2000) ##
 # I am summing the NEP items and subtracting the Dominant Social Paradigm (DSP) items
@@ -531,11 +544,13 @@ d <- d[,!grepl("^Q68_",names(d))]  # dropping original columns that have been co
 
 ## Demographics ##
 d$male <- ifelse(d$Q68 == "Male", 1, 0)
-d$education <- as.numeric(decode(d$Q71,
+d$female <- ifelse(d$Q68 == "Female", 1, 0)
+d$othergender <- ifelse(d$Q68 == "Non-binary" | d$Q68 == "Prefer to self-describe", 1, 0)
+d$education <- scale(as.numeric(decode(d$Q71,
                                  search = c("Some high school (no diploma)", "High school graduate (incl. GED)",
                                             "Some college (no degree)", "Associates degree/technical school/apprenticeship", 
                                             "Bachelor’s degree", "Postgraduate (like Master’s, PhD) / professional degree (like JD)"),
-                                 replace = c("1", "2", "3", "4", "5", "6")))
+                                 replace = c("1", "2", "3", "4", "5", "6"))))
 d$bachelorsDegree <- ifelse(d$education >= 5, 1, 0)
 d$income <- as.numeric(decode(d$Q72,
                               search = c("Less than $10,000", "$10,000 to $14,999", "$15,000 to $24,999",
@@ -566,6 +581,13 @@ d <- d[, !grepl("^Q70_", names(d))]
 
 d$republican <- ifelse(d$Q73 == "Republican", 1, 0)
 d$democrat <- ifelse(d$Q73 == "Democrat", 1, 0)
+d$democraticSocialist <- ifelse(d$Q73 == "Democratic Socialist", 1, 0)
+d$greenParty <- ifelse(d$Q73 == "Green Party", 1, 0)
+d$independentUnaffiliated <- ifelse(d$Q73 == "Independent" | d$Q73 == "No affiliation", 1, 0)
+d$libertarian <- ifelse(d$Q73 == "Libertarian", 1, 0)
+d$progressive <- ifelse(d$Q73 == "Progressive", 1, 0)
+d$teaParty <- ifelse(d$Q73 == "Tea Party", 1, 0)
+
 d$trump <- ifelse(d$Q98 == "Donald Trump / Mike Pence (Republican)", 1, 0)
 d$biden <- ifelse(d$Q98 == "Joe Biden / Kamala Harris (Democratic)", 1, 0)
 
@@ -585,6 +607,22 @@ d$children <- as.numeric(h$Q95_4) + as.numeric(h$Q95_3)
 d <- d[,!grepl("^Q95_",names(d))]
 rm(h)
 
+#### Final Cleanup of the Dataframe ####
+rm(covidSafetyBehavior, lot, NEP)
+rm(drops, lotteryMultiSwitch, lotteryNAs, lotterySwitchPoint, x)
+rm(d1, dEastNorthCentral, dEastSouthCentral, dMiddleAtlantic, dMountain, dNewEngland, dPacific, dSouthAtlantic, dWestNorthCentral, dWestSouthCentral)
+rm(e, e_scale, e1, missing, missingRiskPerceptionIndex, s, s1, trust_df, x_cor, x_scale, sra, l)
+
+# Note: the "parent" variable was miscoded in Qualtrics and set equal to 1 for all participants. This does not affect the data.
+d %>% dplyr::select(-`Q80_6_TEXT - Parent Topics`, -`Q80_6_TEXT - Topics`, -Q96_36_TEXT, -Q80_6_TEXT, 
+                    -Q73_10_TEXT, -`Random ID`, -Q80_1, -parent) -> d
+
+
+d <- d[, !grepl("^Q46_", names(d))]  # this question was improperly coded in the survey and did not show up for the relevant respondents
+d <- d[, !grepl("^Q48_", names(d))]  # this question was improperly coded in the survey and did not show up for the relevant respondents
+
+write.csv(d, "data/segsCovid_2020Survey_FullCleanDataSet.csv")
+
 #### Outdoor Use Questions ####
 # Moving all outdoor use questions to a separate dataframe for later analysis.
 d %>%
@@ -593,22 +631,6 @@ d %>%
 d %>%
   dplyr::select(-Q12_1:-Q12_8, -Q13, -Q14, -Q15_1:-Q15_10, -Q16_1:-Q16_8,
                 -Q32_1:-Q32_12, -Q34_1:-Q34_12) -> d
-
-
-
-
-
-#### Final Cleanup of the Dataframe ####
-rm(covidSafetyBehavior, lot, NEP)
-rm(drops, lotteryMultiSwitch, lotteryNAs, lotterySwitchPoint, x)
-rm(d1, dEastNorthCentral, dEastSouthCentral, dMiddleAtlantic, dMountain, dNewEngland, dPacific, dSouthAtlantic, dWestNorthCentral, dWestSouthCentral)
-rm(e, e_scale, e1, missing, missingRiskPerceptionIndex, s, s1, trust_df, x_cor, x_scale, sra, l)
-
-d %>% dplyr::select(-`Q80_6_TEXT - Parent Topics`, -`Q80_6_TEXT - Topics`, -Q96_36_TEXT, -Q80_6_TEXT, 
-                    -Q73_10_TEXT, -`Random ID`, -Q80_1) -> d
-
-d <- d[, !grepl("^Q46_", names(d))]  # this question was improperly coded in the survey and did not show up for the relevant respondents
-d <- d[, !grepl("^Q48_", names(d))]  # this question was improperly coded in the survey and did not show up for the relevant respondents
 
 
 write.csv(d, "data/segsCovid_2020Survey_CleanDataSet.csv")

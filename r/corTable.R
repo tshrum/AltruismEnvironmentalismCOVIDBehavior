@@ -45,9 +45,6 @@ d %>%
                 knowCovid , incomeLoss , mentalHealthIndex ,
                 vaccinesCovid , antiVaxIndex , trustMedScientists , worriedCOVID) -> cortable
 
-corstarsl(swiss[,1:4])
-xtable(corstarsl(swiss[,1:4])) #Latex code
-
 corstarsl(cortable)
 xtable(corstarsl(cortable))
 

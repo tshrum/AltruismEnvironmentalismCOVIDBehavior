@@ -1,0 +1,14 @@
+NEP:
+age: in years
+male: indicator for male gender (male = 1), comparison group includes female and other
+income:  + scale(education) + black + latino + trump + biden + scale(lotterySwitchPoint) +  
+  
+scale(mentalHealthIndex): standardized index of mental health where higher numbers indicate poorer mental health
+
+*scale(incomeLoss) +
+  preexistCond + household65 + smallChildren + likelihoodFatalCovid + likelihoodCovid +
+  positiveCovid + knowCovid + 
+  maskFreqCommunity + socialGatherFreqCommunity + 
+  popDensity + pastWeekCasesPC +
+  paidSickLeave + insured +
+  scale(vaccinesCovid) + scale(antiVaxIndex) + scale(trustMedScientists) + scale(worriedCOVID)

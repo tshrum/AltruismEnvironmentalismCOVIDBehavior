@@ -22,6 +22,7 @@ library(lavaan)
 library(psych)
 library(MBESS)
 library(tidygeocoder)
+library(jtools)
 
 
 source('~/Projects/SEGS_COVID/r/functions.R', echo=TRUE)

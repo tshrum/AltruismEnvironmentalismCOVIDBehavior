@@ -79,7 +79,7 @@ l %>%
   dplyr::filter(stateValidated == 0) -> x
 
 # Marking mismatched of reported zip code and reported state as invalid (after checking for typos)
-l$invalidResponse <- ifelse(l$stateValidated == 0 & l$invalidResponse == 0, 3, l$invalidResponse)
+l$invalidResponse <- ifelse(l$stateValidated == 0 & l$invalidResponse == 0, 4, l$invalidResponse)
 table(l$invalidResponse)
 
 # Changing state variable to reflect validated states unless zip code was missing and state was reported
